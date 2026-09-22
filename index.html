@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Language Tutor — Avatar 01 — v0.1</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f3f2ef;color:#202124;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+.app{max-width:720px;min-height:100vh;margin:auto;display:flex;flex-direction:column}
+header{padding:18px 20px;display:flex;justify-content:space-between}
+.title{font-weight:700}.status{font-size:13px;opacity:.6}
+main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.avatar{width:min(70vw,360px);aspect-ratio:1/1;border-radius:50%;overflow:hidden;box-shadow:0 14px 45px #0002;transition:.2s}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.avatar.listening{box-shadow:0 0 0 8px #ffffffaa,0 14px 45px #0003}
+.avatar.speaking{transform:scale(1.015)}
+.bubble{margin-top:26px;background:#fff;border-radius:22px;padding:18px 20px;width:min(92%,560px);font-size:18px;line-height:1.45;box-shadow:0 5px 20px #0000000b}
+.heard{margin-top:10px;font-size:14px;opacity:.55;text-align:center;min-height:20px}
+.controls{padding:20px;display:flex;justify-content:center;gap:10px}
+button{border:0;border-radius:999px;padding:13px 20px;background:#222;color:#fff;font-size:15px}
+button:disabled{opacity:.45}
+.hint{text-align:center;font-size:12px;opacity:.55;padding:0 20px 22px}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="title">Language Tutor <small>v0.1</small></div>
+  <div id="status" class="status">Gotowy</div>
+</header>
+
+<main>
+  <div id="avatar" class="avatar">
+    <img src="avatar-01.jpg" alt="Avatar 01">
+  </div>
+  <div id="reply" class="bubble">Hola. Cuando quieras, empezamos.</div>
+  <div id="heard" class="heard"></div>
+</main>
+
+<div class="controls">
+  <button id="start">Rozpocznij rozmowę</button>
+  <button id="stop" disabled>Zakończ</button>
+</div>
+<div class="hint">
+  Pierwszy test UX: po rozpoczęciu rozmowy mikrofon działa automatycznie.
+  Nie trzeba naciskać go przy kolejnych wypowiedziach.
+</div>
+</div>
+
+<script>
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const startBtn = document.querySelector("#start");
+const stopBtn = document.querySelector("#stop");
+const statusEl = document.querySelector("#status");
+const replyEl = document.querySelector("#reply");
+const heardEl = document.querySelector("#heard");
+const avatar = document.querySelector("#avatar");
+
+let active = false;
+let recognition = null;
+let restartTimer = null;
+let speaking = false;
+
+function status(t){ statusEl.textContent = t; }
+
+function speak(text){
+  if (!("speechSynthesis" in window)) return;
+  speaking = true;
+  avatar.classList.add("speaking");
+  status("Mówię…");
+  speechSynthesis.cancel();
+
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "es-ES";
+  u.rate = 0.92;
+  u.onend = () => {
+    speaking = false;
+    avatar.classList.remove("speaking");
+    if (active) startListening();
+  };
+  speechSynthesis.speak(u);
+}
+
+function startListening(){
+  if (!active || !recognition || speaking) return;
+  clearTimeout(restartTimer);
+  try { recognition.start(); } catch(e) {}
+}
+
+function makeRecognition(){
+  if (!SR){
+    status("Ta przeglądarka nie obsługuje rozpoznawania mowy");
+    return null;
+  }
+
+  const r = new SR();
+  r.lang = "es-ES";
+  r.continuous = false;
+  r.interimResults = true;
+  r.maxAlternatives = 1;
+
+  r.onstart = () => {
+    avatar.classList.add("listening");
+    status("Słucham…");
+  };
+
+  r.onresult = (event) => {
+    let finalText = "";
+    let interim = "";
+
+    for(let i=event.resultIndex;i<event.results.length;i++){
+      const text = event.results[i][0].transcript;
+      if(event.results[i].isFinal) finalText += text;
+      else interim += text;
+    }
+
+    if(interim) heardEl.textContent = "Słyszę: " + interim;
+
+    if(finalText.trim()){
+      heardEl.textContent = "Ty: " + finalText.trim();
+      avatar.classList.remove("listening");
+      respond(finalText.trim());
+    }
+  };
+
+  r.onerror = (event) => {
+    avatar.classList.remove("listening");
+    if(event.error === "not-allowed"){
+      active = false;
+      status("Brak zgody na mikrofon");
+      return;
+    }
+    if(active) restartTimer = setTimeout(startListening, 500);
+  };
+
+  r.onend = () => {
+    avatar.classList.remove("listening");
+    if(active && !speaking)
+      restartTimer = setTimeout(startListening, 350);
+  };
+
+  return r;
+}
+
+/* Tymczasowy lokalny "mózg".
+   W kolejnym kroku zastąpimy tę funkcję prawdziwym Realtime API. */
+function respond(text){
+  const t = text.toLowerCase();
+  let answer = "Muy bien. Cuéntame un poco más.";
+
+  if(t.includes("hola"))
+    answer = "¡Hola! Me alegra hablar contigo. ¿Cómo estás hoy?";
+  else if(t.includes("cómo estás") || t.includes("como estas"))
+    answer = "Estoy muy bien, gracias. ¿Y tú? ¿Qué has hecho hoy?";
+  else if(t.includes("hoy"))
+    answer = "¿Ah, sí? Cuéntame qué has hecho hoy.";
+  else if(t.includes("ayer"))
+    answer = "Interesante. ¿Qué hiciste ayer?";
+  else if(t.includes("gracias"))
+    answer = "De nada. Seguimos hablando.";
+
+  replyEl.textContent = answer;
+  speak(answer);
+}
+
+startBtn.onclick = () => {
+  if(!SR){
+    alert("Spróbuj w Chrome/Edge z obsługą Web Speech API.");
+    return;
+  }
+
+  active = true;
+  recognition = makeRecognition();
+  startBtn.disabled = true;
+  stopBtn.disabled = false;
+
+  replyEl.textContent = "Perfecto. Te escucho.";
+  speak("Perfecto. Te escucho.");
+};
+
+stopBtn.onclick = () => {
+  active = false;
+  clearTimeout(restartTimer);
+  if(recognition) try { recognition.stop(); } catch(e) {}
+  if("speechSynthesis" in window) speechSynthesis.cancel();
+
+  speaking = false;
+  avatar.classList.remove("listening","speaking");
+  startBtn.disabled = false;
+  stopBtn.disabled = true;
+  status("Rozmowa zakończona");
+};
+</script>
+</body>
+</html>
