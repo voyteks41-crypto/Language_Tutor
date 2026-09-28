@@ -1,41 +1,47 @@
 export default async function handler(req, res) {
-  // Tylko POST
   if (req.method !== "POST") {
-    return res.status(405).json({
-      error: "Method not allowed"
-    });
-  }
-
-  // Klucz API pozostaje wyłącznie po stronie serwera
-  const apiKey = process.env.DEEPSEEK_API_KEY;
-
-  if (!apiKey) {
-    return res.status(500).json({
-      error: "DEEPSEEK_API_KEY is not configured"
-    });
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    const { messages } = req.body || {};
+    const { message } = req.body;
 
-    if (!Array.isArray(messages) || messages.length === 0) {
-      return res.status(400).json({
-        error: "messages must be a non-empty array"
-      });
+    if (!message) {
+      return res.status(400).json({ error: "Missing message" });
     }
 
     const response = await fetch(
-      "https://api.deepseek.com/chat/completions",
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`
+          "x-goog-api-key": process.env.GEMINI_API_KEY
         },
         body: JSON.stringify({
-          model: "deepseek-flash",
-          messages,
-          stream: false
+          systemInstruction: {
+            parts: [
+              {
+                text: `You are an AI language tutor.
+
+Your job is to have a natural conversation with the user in the language they are practicing.
+
+Do not interrupt the user after every word or minor mistake.
+
+When the user makes an important grammatical or vocabulary mistake, continue the conversation naturally and then briefly correct the mistake.
+
+If the user uses Polish or English because they do not know a word in the target language, provide the correct target-language word naturally.
+
+Keep the conversation friendly, natural and appropriate for a language-learning application.`
+              }
+            ]
+          },
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: message }]
+            }
+          ]
         })
       }
     );
@@ -43,32 +49,20 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("DeepSeek API error:", data);
-
       return res.status(response.status).json({
-        error: "DeepSeek API error",
-        details: data
+        error: data.error?.message || "Gemini API error"
       });
     }
 
-    const answer =
-      data?.choices?.[0]?.message?.content;
+    const reply =
+      data.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "I couldn't generate a response.";
 
-    if (!answer) {
-      return res.status(502).json({
-        error: "DeepSeek returned no answer"
-      });
-    }
-
-    return res.status(200).json({
-      reply: answer
-    });
+    return res.status(200).json({ reply });
 
   } catch (error) {
-    console.error("Backend error:", error);
-
     return res.status(500).json({
-      error: "Internal server error"
+      error: error.message || "Server error"
     });
   }
 }
