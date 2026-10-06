@@ -292,10 +292,10 @@ speak(answer);
 
   }catch(error){
 
-    console.error(error);
+    console.error("BŁĄD RESPOND():", error);
 
     replyEl.textContent =
-      "Lo siento, hubo un problema.";
+      "Błąd: " + error.message;
 
     status("Błąd Gemini");
 
