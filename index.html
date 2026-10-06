@@ -252,29 +252,43 @@ async function respond(text){
 
     });
 
-    const data = await response.json();
+const raw = await response.text();
 
-    if(!response.ok){
+console.log("CHAT STATUS:", response.status);
+console.log("CHAT RESPONSE:", raw);
 
-      throw new Error(
-        data.error ||
-        "Błąd połączenia z Gemini."
-      );
+let data;
 
-    }
+try {
+  data = JSON.parse(raw);
+} catch (e) {
+  throw new Error(
+    "Serwer zwrócił nie-JSON: " + raw.slice(0, 300)
+  );
+}
 
-    const answer =
-      data.text ||
-      "No entendí. ¿Puedes repetirlo?";
+if (!response.ok) {
+  throw new Error(
+    data.error || "Błąd Gemini."
+  );
+}
 
-    conversation.push({
-      role:"model",
-      text:answer
-    });
+const answer = data.text;
 
-    replyEl.textContent = answer;
+if (!answer) {
+  throw new Error(
+    "Gemini nie zwrócił tekstu."
+  );
+}
 
-    speak(answer);
+conversation.push({
+  role: "model",
+  text: answer
+});
+
+replyEl.textContent = answer;
+
+speak(answer);
 
   }catch(error){
 
