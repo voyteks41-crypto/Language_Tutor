@@ -1,150 +1,40 @@
 <!doctype html>
 <html lang="pl">
-
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-
 <title>Language Tutor — Avatar 01 — v0.2</title>
-
 <style>
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  background: #f3f2ef;
-  color: #202124;
-  font-family: system-ui, -apple-system, Segoe UI, sans-serif;
-}
-
-.app {
-  max-width: 720px;
-  min-height: 100vh;
-  margin: auto;
-  display: flex;
-  flex-direction: column;
-}
-
-header {
-  padding: 18px 20px;
-  display: flex;
-  justify-content: space-between;
-}
-
-.title {
-  font-weight: 700;
-}
-
-.status {
-  font-size: 13px;
-  opacity: .6;
-}
-
-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.avatar {
-  width: min(70vw, 360px);
-  aspect-ratio: 1 / 1;
-  border-radius: 50%;
-  overflow: hidden;
-  box-shadow: 0 14px 45px #0002;
-  transition: .2s;
-}
-
-.avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.avatar.listening {
-  box-shadow:
-    0 0 0 8px #ffffffaa,
-    0 14px 45px #0003;
-}
-
-.avatar.speaking {
-  transform: scale(1.015);
-}
-
-.bubble {
-  margin-top: 26px;
-  background: #fff;
-  border-radius: 22px;
-  padding: 18px 20px;
-  width: min(92%, 560px);
-  font-size: 18px;
-  line-height: 1.45;
-  box-shadow: 0 5px 20px #0000000b;
-}
-
-.heard {
-  margin-top: 10px;
-  font-size: 14px;
-  opacity: .55;
-  text-align: center;
-  min-height: 20px;
-}
-
-.controls {
-  padding: 20px;
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-}
-
-button {
-  border: 0;
-  border-radius: 999px;
-  padding: 13px 20px;
-  background: #222;
-  color: #fff;
-  font-size: 15px;
-}
-
-button:disabled {
-  opacity: .45;
-}
-
-.hint {
-  text-align: center;
-  font-size: 12px;
-  opacity: .55;
-  padding: 0 20px 22px;
-}
+*{box-sizing:border-box}
+body{margin:0;background:#f3f2ef;color:#202124;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+.app{max-width:720px;min-height:100vh;margin:auto;display:flex;flex-direction:column}
+header{padding:18px 20px;display:flex;justify-content:space-between}
+.title{font-weight:700}.status{font-size:13px;opacity:.6}
+main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.avatar{width:min(70vw,360px);aspect-ratio:1/1;border-radius:50%;overflow:hidden;box-shadow:0 14px 45px #0002;transition:.2s}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.avatar.listening{box-shadow:0 0 0 8px #ffffffaa,0 14px 45px #0003}
+.avatar.speaking{transform:scale(1.015)}
+.bubble{margin-top:26px;background:#fff;border-radius:22px;padding:18px 20px;width:min(92%,560px);font-size:18px;line-height:1.45;box-shadow:0 5px 20px #0000000b}
+.heard{margin-top:10px;font-size:14px;opacity:.55;text-align:center;min-height:20px}
+.controls{padding:20px;display:flex;justify-content:center;gap:10px}
+button{border:0;border-radius:999px;padding:13px 20px;background:#222;color:#fff;font-size:15px}
+button:disabled{opacity:.45}
+.hint{text-align:center;font-size:12px;opacity:.55;padding:0 20px 22px}
 </style>
 </head>
 
 <body>
-
 <div class="app">
 
 <header>
-  <div class="title">
-    Language Tutor <small>v0.2</small>
-  </div>
-
-  <div id="status" class="status">
-    Gotowy
-  </div>
+  <div class="title">Language Tutor <small>v0.2</small></div>
+  <div id="status" class="status">Gotowy</div>
 </header>
 
 <main>
-
   <div id="avatar" class="avatar">
-    <img
-      src="avatar-01.jpg"
-      alt="Avatar 01"
-    >
+    <img src="avatar-01.jpg" alt="Avatar 01">
   </div>
 
   <div id="reply" class="bubble">
@@ -152,30 +42,22 @@ button:disabled {
   </div>
 
   <div id="heard" class="heard"></div>
-
 </main>
 
 <div class="controls">
-
-  <button id="start">
-    Rozpocznij rozmowę
-  </button>
-
-  <button id="stop" disabled>
-    Zakończ
-  </button>
-
+  <button id="start">Rozpocznij rozmowę</button>
+  <button id="stop" disabled>Zakończ</button>
 </div>
 
 <div class="hint">
-  Rozmowa głosowa działa automatycznie.
-  Nie trzeba naciskać mikrofonu przy kolejnych wypowiedziach.
+  Rozmowa głosowa działa automatycznie. Nie trzeba naciskać mikrofonu przy kolejnych wypowiedziach.
 </div>
 
 </div>
-
 
 <script>
+
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 const startBtn = document.querySelector("#start");
 const stopBtn = document.querySelector("#stop");
@@ -184,780 +66,297 @@ const replyEl = document.querySelector("#reply");
 const heardEl = document.querySelector("#heard");
 const avatar = document.querySelector("#avatar");
 
-const MODEL = "gemini-3.8-live";
-
 let active = false;
-let socket = null;
+let recognition = null;
+let restartTimer = null;
+let speaking = false;
 
-let stream = null;
-let inputContext = null;
-let inputSource = null;
-let processor = null;
+let conversation = [];
 
-let outputContext = null;
-let nextPlayTime = 0;
-
-
-/* -------------------------------------------------- */
-/* UI */
-/* -------------------------------------------------- */
-
-function setStatus(text) {
-  statusEl.textContent = text;
+function status(t){
+  statusEl.textContent = t;
 }
 
+function speak(text){
 
-/* -------------------------------------------------- */
-/* BASE64 */
-/* -------------------------------------------------- */
+  if (!("speechSynthesis" in window)) return;
 
-function bytesToBase64(bytes) {
-
-  let binary = "";
-
-  const chunkSize = 0x8000;
-
-  for (
-    let i = 0;
-    i < bytes.length;
-    i += chunkSize
-  ) {
-
-    binary += String.fromCharCode(
-      ...bytes.subarray(i, i + chunkSize)
-    );
-  }
-
-  return btoa(binary);
-}
-
-
-function base64ToBytes(base64) {
-
-  const binary = atob(base64);
-
-  const bytes =
-    new Uint8Array(binary.length);
-
-  for (
-    let i = 0;
-    i < binary.length;
-    i++
-  ) {
-
-    bytes[i] =
-      binary.charCodeAt(i);
-  }
-
-  return bytes;
-}
-
-
-/* -------------------------------------------------- */
-/* PCM */
-/* -------------------------------------------------- */
-
-function float32ToPCM16(float32) {
-
-  const buffer =
-    new ArrayBuffer(float32.length * 2);
-
-  const view =
-    new DataView(buffer);
-
-  for (
-    let i = 0;
-    i < float32.length;
-    i++
-  ) {
-
-    let sample =
-      Math.max(
-        -1,
-        Math.min(1, float32[i])
-      );
-
-    view.setInt16(
-      i * 2,
-      sample < 0
-        ? sample * 0x8000
-        : sample * 0x7fff,
-      true
-    );
-  }
-
-  return new Uint8Array(buffer);
-}
-
-
-/* -------------------------------------------------- */
-/* OUTPUT AUDIO */
-/* -------------------------------------------------- */
-
-function playPCM16(base64) {
-
-  if (!outputContext) {
-    return;
-  }
-
-  const bytes =
-    base64ToBytes(base64);
-
-  const sampleCount =
-    bytes.length / 2;
-
-  const audioBuffer =
-    outputContext.createBuffer(
-      1,
-      sampleCount,
-      24000
-    );
-
-  const channel =
-    audioBuffer.getChannelData(0);
-
-  const view =
-    new DataView(
-      bytes.buffer,
-      bytes.byteOffset,
-      bytes.byteLength
-    );
-
-  for (
-    let i = 0;
-    i < sampleCount;
-    i++
-  ) {
-
-    channel[i] =
-      view.getInt16(
-        i * 2,
-        true
-      ) / 32768;
-  }
-
-  const source =
-    outputContext.createBufferSource();
-
-  source.buffer = audioBuffer;
-
-  source.connect(
-    outputContext.destination
-  );
-
-  const now =
-    outputContext.currentTime;
-
-  if (nextPlayTime < now) {
-    nextPlayTime = now;
-  }
-
-  source.start(nextPlayTime);
-
-  nextPlayTime +=
-    audioBuffer.duration;
+  speaking = true;
 
   avatar.classList.add("speaking");
+  status("Mówię…");
 
-  setStatus("Mówię…");
+  speechSynthesis.cancel();
 
-  source.onended = () => {
+  const u = new SpeechSynthesisUtterance(text);
 
-    if (
-      outputContext &&
-      nextPlayTime <=
-        outputContext.currentTime + 0.05
-    ) {
+  u.lang = "es-ES";
+  u.rate = 0.92;
 
-      avatar.classList.remove(
-        "speaking"
-      );
+  u.onend = () => {
 
-      if (active) {
-        avatar.classList.add(
-          "listening"
-        );
+    speaking = false;
 
-        setStatus("Słucham…");
-      }
+    avatar.classList.remove("speaking");
+
+    if(active){
+      startListening();
     }
+
   };
+
+  speechSynthesis.speak(u);
 }
 
+function startListening(){
 
-/* -------------------------------------------------- */
-/* EPHEMERAL TOKEN */
-/* -------------------------------------------------- */
+  if(!active || !recognition || speaking) return;
 
-async function getEphemeralToken() {
+  clearTimeout(restartTimer);
 
-  const response =
-    await fetch(
-      "/api/live-token",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type":
-            "application/json"
-        },
-        body: "{}"
-      }
-    );
+  try{
+    recognition.start();
+  }catch(e){}
 
-  const data =
-    await response.json();
+}
 
-  if (
-    !response.ok ||
-    !data.token
-  ) {
+function makeRecognition(){
 
-    throw new Error(
-      data.error ||
-      "Nie udało się uzyskać tokena Gemini."
-    );
+  if(!SR){
+
+    status("Ta przeglądarka nie obsługuje rozpoznawania mowy");
+
+    return null;
   }
 
-  return data.token;
-}
+  const r = new SR();
 
+  r.lang = "es-ES";
+  r.continuous = false;
+  r.interimResults = true;
+  r.maxAlternatives = 1;
 
-/* -------------------------------------------------- */
-/* MICROPHONE */
-/* -------------------------------------------------- */
+  r.onstart = () => {
 
-async function startMicrophone() {
+    avatar.classList.add("listening");
 
-  stream =
-    await navigator.mediaDevices
-      .getUserMedia({
-        audio: {
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        }
-      });
+    status("Słucham…");
 
-  inputContext =
-    new AudioContext({
-      sampleRate: 16000
-    });
-
-  await inputContext.resume();
-
-  inputSource =
-    inputContext.createMediaStreamSource(
-      stream
-    );
-
-  processor =
-    inputContext.createScriptProcessor(
-      2048,
-      1,
-      1
-    );
-
-  processor.onaudioprocess =
-    (event) => {
-
-      if (
-        !active ||
-        !socket ||
-        socket.readyState !==
-          WebSocket.OPEN
-      ) {
-        return;
-      }
-
-      const input =
-        event.inputBuffer
-          .getChannelData(0);
-
-      const pcm =
-        float32ToPCM16(input);
-
-      socket.send(
-        JSON.stringify({
-          realtimeInput: {
-            audio: {
-              data:
-                bytesToBase64(pcm),
-              mimeType:
-                "audio/pcm;rate=16000"
-            }
-          }
-        })
-      );
-    };
-
-  inputSource.connect(
-    processor
-  );
-
-  /*
-   * The processor needs an output
-   * connection to remain active.
-   *
-   * We do not want microphone
-   * audio played back to the user.
-   */
-  const silentGain =
-    inputContext.createGain();
-
-  silentGain.gain.value = 0;
-
-  processor.connect(
-    silentGain
-  );
-
-  silentGain.connect(
-    inputContext.destination
-  );
-}
-
-
-/* -------------------------------------------------- */
-/* GEMINI LIVE */
-/* -------------------------------------------------- */
-
-async function startGeminiLive() {
-
-  const token =
-    await getEphemeralToken();
-
-  outputContext =
-    new AudioContext({
-      sampleRate: 24000
-    });
-
-  await outputContext.resume();
-
-  nextPlayTime =
-    outputContext.currentTime;
-
-  const url =
-    "wss://generativelanguage.googleapis.com/ws/" +
-    "google.ai.generativelanguage.v1beta." +
-    "GenerativeService.BidiGenerateContentConstrained" +
-    "?access_token=" +
-    encodeURIComponent(token);
-
-  socket =
-    new WebSocket(url);
-
-
-  socket.onopen = async () => {
-
-    setStatus(
-      "Połączono z Gemini…"
-    );
-
-    /*
-     * Initial Live API configuration.
-     */
-    socket.send(
-      JSON.stringify({
-        setup: {
-
-          model:
-            `models/${MODEL}`,
-
-          generationConfig: {
-            responseModalities: [
-              "AUDIO"
-            ]
-          },
-
-          systemInstruction: {
-            parts: [
-              {
-                text:
-                  "You are an AI language tutor. " +
-                  "Have a natural conversation with the user in Spanish. " +
-                  "The user is learning Spanish. " +
-                  "Do not interrupt or correct every small mistake. " +
-                  "When there is an important grammar or vocabulary mistake, " +
-                  "continue naturally and then briefly correct it. " +
-                  "If the user uses Polish or English because they do not know " +
-                  "a Spanish word, provide the Spanish word naturally. " +
-                  "Keep the conversation friendly, natural and reasonably concise. " +
-                  "Do not turn every sentence into a lesson."
-              }
-            ]
-          },
-
-          inputAudioTranscription: {},
-
-          outputAudioTranscription: {},
-
-          realtimeInputConfig: {
-            automaticActivityDetection: {
-              disabled: false
-            }
-          }
-        }
-      })
-    );
-
-
-    try {
-
-      active = true;
-
-      await startMicrophone();
-
-      startBtn.disabled = true;
-      stopBtn.disabled = false;
-
-      replyEl.textContent =
-        "Perfecto. Te escucho.";
-
-      heardEl.textContent = "";
-
-      avatar.classList.add(
-        "listening"
-      );
-
-      setStatus(
-        "Słucham…"
-      );
-
-    } catch (error) {
-
-      console.error(
-        "Microphone error:",
-        error
-      );
-
-      stopConversation();
-
-      setStatus(
-        "Nie udało się uruchomić mikrofonu."
-      );
-
-      replyEl.textContent =
-        error.message;
-    }
   };
 
+  r.onresult = (event) => {
 
-  socket.onmessage =
-    (event) => {
+    let finalText = "";
+    let interim = "";
 
-      try {
+    for(
+      let i = event.resultIndex;
+      i < event.results.length;
+      i++
+    ){
 
-        const message =
-          JSON.parse(
-            event.data
-          );
+      const text = event.results[i][0].transcript;
 
-        const content =
-          message.serverContent;
-
-        if (!content) {
-          return;
-        }
-
-
-        /*
-         * User transcription.
-         */
-
-        if (
-          content.interimInputTranscription
-            ?.text
-        ) {
-
-          heardEl.textContent =
-            "Ty: " +
-            content
-              .interimInputTranscription
-              .text;
-        }
-
-
-        if (
-          content.inputTranscription
-            ?.text
-        ) {
-
-          heardEl.textContent =
-            "Ty: " +
-            content
-              .inputTranscription
-              .text;
-
-          avatar.classList.add(
-            "listening"
-          );
-        }
-
-
-        /*
-         * Tutor transcription.
-         */
-
-        if (
-          content.outputTranscription
-            ?.text
-        ) {
-
-          replyEl.textContent =
-            content
-              .outputTranscription
-              .text;
-        }
-
-
-        /*
-         * Tutor audio.
-         */
-
-        if (
-          content.modelTurn &&
-          content.modelTurn.parts
-        ) {
-
-          for (
-            const part
-            of content.modelTurn.parts
-          ) {
-
-            if (
-              part.inlineData &&
-              part.inlineData.data
-            ) {
-
-              playPCM16(
-                part.inlineData.data
-              );
-            }
-          }
-        }
-
-
-        /*
-         * End of tutor turn.
-         */
-
-        if (
-          content.turnComplete
-        ) {
-
-          avatar.classList.remove(
-            "speaking"
-          );
-
-          if (active) {
-
-            avatar.classList.add(
-              "listening"
-            );
-
-            setStatus(
-              "Słucham…"
-            );
-          }
-        }
-
-      } catch (error) {
-
-        console.error(
-          "Gemini message error:",
-          error
-        );
+      if(event.results[i].isFinal){
+        finalText += text;
+      }else{
+        interim += text;
       }
-    };
 
+    }
 
-  socket.onerror =
-    (error) => {
+    if(interim){
+      heardEl.textContent = "Słyszę: " + interim;
+    }
 
-      console.error(
-        "Gemini WebSocket error:",
-        error
-      );
+    if(finalText.trim()){
 
-      setStatus(
-        "Błąd połączenia z Gemini."
-      );
-    };
+      const text = finalText.trim();
 
+      heardEl.textContent = "Ty: " + text;
 
-  socket.onclose =
-    (event) => {
+      avatar.classList.remove("listening");
 
-      console.log(
-        "Gemini WebSocket closed:",
-        event.code,
-        event.reason
-      );
+      respond(text);
 
-      if (active) {
+    }
 
-        stopConversation();
+  };
 
-        setStatus(
-          "Połączenie z Gemini zakończone."
-        );
-      }
-    };
+  r.onerror = (event) => {
+
+    avatar.classList.remove("listening");
+
+    if(event.error === "not-allowed"){
+
+      active = false;
+
+      status("Brak zgody na mikrofon");
+
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+
+      return;
+    }
+
+    if(active){
+
+      restartTimer =
+        setTimeout(startListening,500);
+
+    }
+
+  };
+
+  r.onend = () => {
+
+    avatar.classList.remove("listening");
+
+    if(active && !speaking){
+
+      restartTimer =
+        setTimeout(startListening,350);
+
+    }
+
+  };
+
+  return r;
 }
 
 
-/* -------------------------------------------------- */
-/* START */
-/* -------------------------------------------------- */
+async function respond(text){
 
-async function startConversation() {
+  if(!active) return;
 
-  if (active) {
+  status("Gemini myśli…");
+
+  try{
+
+    conversation.push({
+      role:"user",
+      text:text
+    });
+
+    const response = await fetch("/api/chat",{
+
+      method:"POST",
+
+      headers:{
+        "Content-Type":"application/json"
+      },
+
+      body:JSON.stringify({
+        conversation:conversation
+      })
+
+    });
+
+    const data = await response.json();
+
+    if(!response.ok){
+
+      throw new Error(
+        data.error ||
+        "Błąd połączenia z Gemini."
+      );
+
+    }
+
+    const answer =
+      data.text ||
+      "No entendí. ¿Puedes repetirlo?";
+
+    conversation.push({
+      role:"model",
+      text:answer
+    });
+
+    replyEl.textContent = answer;
+
+    speak(answer);
+
+  }catch(error){
+
+    console.error(error);
+
+    replyEl.textContent =
+      "Lo siento, hubo un problema.";
+
+    status("Błąd Gemini");
+
+    if(active){
+
+      setTimeout(startListening,1000);
+
+    }
+
+  }
+
+}
+
+
+startBtn.onclick = () => {
+
+  if(!SR){
+
+    alert(
+      "Spróbuj w Chrome/Edge z obsługą Web Speech API."
+    );
+
     return;
   }
 
-  try {
+  active = true;
 
-    startBtn.disabled = true;
+  conversation = [];
 
-    setStatus(
-      "Łączenie z Gemini…"
-    );
+  recognition = makeRecognition();
 
-    replyEl.textContent =
-      "Łączę się…";
+  startBtn.disabled = true;
+  stopBtn.disabled = false;
 
-    await startGeminiLive();
+  replyEl.textContent =
+    "Perfecto. Te escucho.";
 
-  } catch (error) {
+  speak("Perfecto. Te escucho.");
 
-    console.error(
-      "Start error:",
-      error
-    );
-
-    stopConversation();
-
-    setStatus(
-      "Nie udało się połączyć z Gemini."
-    );
-
-    replyEl.textContent =
-      error.message ||
-      "Wystąpił nieznany błąd.";
-  }
-}
+};
 
 
-/* -------------------------------------------------- */
-/* STOP */
-/* -------------------------------------------------- */
-
-function stopConversation() {
+stopBtn.onclick = () => {
 
   active = false;
 
+  clearTimeout(restartTimer);
 
-  if (processor) {
+  if(recognition){
 
-    try {
-      processor.disconnect();
-    } catch (e) {}
+    try{
+      recognition.stop();
+    }catch(e){}
 
-    processor = null;
   }
 
+  if("speechSynthesis" in window){
 
-  if (inputSource) {
+    speechSynthesis.cancel();
 
-    try {
-      inputSource.disconnect();
-    } catch (e) {}
-
-    inputSource = null;
   }
 
-
-  if (stream) {
-
-    stream
-      .getTracks()
-      .forEach(
-        track => track.stop()
-      );
-
-    stream = null;
-  }
-
-
-  if (inputContext) {
-
-    try {
-      inputContext.close();
-    } catch (e) {}
-
-    inputContext = null;
-  }
-
-
-  if (socket) {
-
-    try {
-      socket.close();
-    } catch (e) {}
-
-    socket = null;
-  }
-
-
-  if (outputContext) {
-
-    try {
-      outputContext.close();
-    } catch (e) {}
-
-    outputContext = null;
-  }
-
-
-  nextPlayTime = 0;
-
+  speaking = false;
 
   avatar.classList.remove(
     "listening",
     "speaking"
   );
 
-
   startBtn.disabled = false;
-
   stopBtn.disabled = true;
-}
 
+  status("Rozmowa zakończona");
 
-/* -------------------------------------------------- */
-/* BUTTONS */
-/* -------------------------------------------------- */
-
-startBtn.addEventListener(
-  "click",
-  startConversation
-);
-
-stopBtn.addEventListener(
-  "click",
-  () => {
-
-    stopConversation();
-
-    setStatus(
-      "Rozmowa zakończona"
-    );
-
-    replyEl.textContent =
-      "Hasta luego.";
-  }
-);
+};
 
 </script>
 
